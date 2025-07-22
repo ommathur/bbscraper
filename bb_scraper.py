@@ -9,7 +9,7 @@ import os
 async def extract_product_info(context, url):
     try:
         page = await context.new_page()
-        await page.goto(url, timeout=10000)
+        await page.goto(url, timeout=5000)
         await page.wait_for_load_state("networkidle")
 
         # Inject stealth script
@@ -21,7 +21,7 @@ async def extract_product_info(context, url):
             await got_it_btn.click()
             await page.wait_for_timeout(500)
 
-        await page.wait_for_selector('h1[class*="Description___StyledH"]', timeout=8000)
+        await page.wait_for_selector('h1[class*="Description___StyledH"]', timeout=5000)
 
         try:
             name_elem = page.locator('h1[class*="Description___StyledH"]').first
@@ -98,8 +98,8 @@ if __name__ == "__main__":
     urls = [
         "https://www.bigbasket.com/pd/40010687/fresho-garlic-peeled-100-g/",
         "https://www.bigbasket.com/pd/100285703/nandini-goodlife-toned-milk-1-l-carton/",
-        "https://www.bigbasket.com/pd/40115484/liao-flat-dry-mop-with-steel-stick-micro-fiber-expandable-1-pc/",
-        "https://www.bigbasket.com/pd/40177241/purefoods-iron-vitamins-gummies-for-kids-strawberry-gluten-free-lactose-free-60-pcs-container/"
+        "https://www.bigbasket.com/pd/40115484/liao-flat-dry-mop-with-steel-stick-micro-fiber-expandable-1-pc/"
+        
     ]
 
     results = asyncio.run(fetch_all_products(urls))
