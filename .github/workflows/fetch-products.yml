@@ -11,14 +11,15 @@ jobs:
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
       SUPABASE_TARGET_USER_ID: ${{ secrets.USER_ID }}
+      PLAYWRIGHT_BROWSERS_PATH: ~/.cache/ms-playwright
 
     steps:
       # ✅ Checkout code
       - name: Checkout repo
         uses: actions/checkout@v3
 
-      # ✅ Cache Python + Playwright dependencies
-      - name: Cache dependencies and browsers
+      # ✅ Cache pip and Playwright Chromium
+      - name: Cache Python & Playwright
         uses: actions/cache@v3
         with:
           path: |
@@ -35,28 +36,32 @@ jobs:
           python-version: "3.10"
           cache: "pip"
 
-      # ✅ Install Python packages
+      # ✅ Install Python dependencies
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      # ✅ Install Playwright browser (chromium only, faster)
-      - name: Install Playwright Browsers
-        run: python -m playwright install chromium
+      # ✅ Install Chromium browser in cache path
+      - name: Install Playwright Chromium
+        run: |
+          PLAYWRIGHT_BROWSERS_PATH=$PLAYWRIGHT_BROWSERS_PATH \
+          python -m playwright install chromium
 
-      # ✅ Fetch session cookie from Supabase
-      - name: Fetch session data from Supabase
+      # ✅ Fetch session data from Supabase
+      - name: Fetch session data
         run: python fetch_from_supabase.py
 
-      # ✅ Convert session to Playwright storage_state format
-      - name: Convert bb.json for Playwright
+      # ✅ Convert to Playwright storage_state
+      - name: Convert session to storage_state
         run: python convert_bbjson.py
 
-      # ✅ Run the BigBasket scraper
+      # ✅ Scrape BigBasket data
       - name: Run BigBasket scraper
-        run: python bb_scraper.py
+        run: |
+          PLAYWRIGHT_BROWSERS_PATH=$PLAYWRIGHT_BROWSERS_PATH \
+          python bb_scraper.py
 
-      # ✅ Upload scraped data
-      - name: Upload product_data.json artifact
+      # ✅ Upload results
+      - name: Upload product_data.json
         uses: actions/upload-artifact@v4
         with:
           name: bigbasket-product-data
