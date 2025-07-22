@@ -1,36 +1,41 @@
-name: Fetch BigBasket Products
+name: Fetch BigBasket Product Data
 
 on:
-  workflow_dispatch:  # Allows you to run it manually from GitHub UI
+  workflow_dispatch:
 
 jobs:
   fetch-products:
     runs-on: ubuntu-latest
 
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      SUPABASE_TARGET_USER_ID: ${{ secrets.USER_ID }}
+
     steps:
-      - name: ⬇️ Checkout code
-        uses: actions/checkout@v4
+      - name: Checkout repo
+        uses: actions/checkout@v3
 
-      - name: 🗂️ Set up Python
-        uses: actions/setup-python@v5
+      - name: Set up Python
+        uses: actions/setup-python@v4
         with:
-          python-version: '3.11'
-          cache: 'pip'
+          python-version: "3.10"
+          cache: "pip"
 
-      - name: 📦 Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install playwright
-          playwright install chromium
+      - name: Install dependencies
+        run: pip install -r requirements.txt
 
-      - name: 📄 Convert BB JSON to Playwright format
+      - name: Fetch session data from Supabase
+        run: python fetch_from_supabase.py
+
+      - name: Convert bb.json for Playwright
         run: python convert_bbjson.py
 
-      - name: 🛒 Run BigBasket scraper
+      - name: Run BigBasket scraper
         run: python bb_scraper.py
 
-      - name: 📤 Upload scraped data
-        uses: actions/upload-artifact@v4
+      - name: Upload product_data.json artifact
+        uses: actions/upload-artifact@v3
         with:
-          name: product_data
+          name: bigbasket-product-data
           path: product_data.json
