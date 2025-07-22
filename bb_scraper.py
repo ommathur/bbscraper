@@ -9,14 +9,16 @@ async def extract_product_info(context, url):
     try:
         page = await context.new_page()
         await page.goto(url, timeout=5000)
+        await page.wait_for_load_state("networkidle")
 
         # Dismiss modal if shown
         got_it_btn = page.locator('button:has-text("Got it")')
         if await got_it_btn.count() > 0:
             await got_it_btn.click()
             await page.wait_for_timeout(500)
+        
 
-        await page.wait_for_selector('h1[class*="Description___StyledH"]', timeout=1000)
+        await page.wait_for_selector('h1[class*="Description___StyledH"]', timeout=8000)
 
         try:
             name_elem = page.locator('h1[class*="Description___StyledH"]').first
