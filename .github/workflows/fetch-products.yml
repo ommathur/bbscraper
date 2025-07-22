@@ -45,7 +45,7 @@ jobs:
 
       # ✅ Install Playwright browsers (will reuse cache if available)
       - name: Install Playwright Browsers
-        run: python -m playwright install --with-deps
+        run:  python -m playwright install chromium
 
       - name: Debug env vars
         run: |
