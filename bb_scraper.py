@@ -21,7 +21,7 @@ async def extract_product_info(context, url):
             await got_it_btn.click()
             await page.wait_for_timeout(500)
 
-        await page.wait_for_selector('h1[class*="Description___StyledH"]', timeout=5000)
+        await page.wait_for_selector('h1[class*="Description___StyledH"]', timeout=7000)
 
         try:
             name_elem = page.locator('h1[class*="Description___StyledH"]').first
