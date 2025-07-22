@@ -1,0 +1,82 @@
+# bb_scraper.py
+
+import json
+import re
+import asyncio
+from playwright.async_api import async_playwright
+
+async def extract_product_info(context, url):
+    try:
+        page = await context.new_page()
+        await page.goto(url, timeout=5000)
+
+        # Dismiss modal if shown
+        got_it_btn = page.locator('button:has-text("Got it")')
+        if await got_it_btn.count() > 0:
+            await got_it_btn.click()
+            await page.wait_for_timeout(500)
+
+        await page.wait_for_selector('h1[class*="Description___StyledH"]', timeout=1000)
+
+        try:
+            name_elem = page.locator('h1[class*="Description___StyledH"]').first
+            name = await name_elem.inner_text()
+        except:
+            name = "N/A"
+
+        size = name.split(",")[-1].strip() if "," in name else "N/A"
+
+        try:
+            price_elem = page.locator('td[class*="Description___StyledTd"]').first
+            price_text = await price_elem.inner_text()
+            price_match = re.search(r"₹(\d+)", price_text)
+            price = price_match.group(1) if price_match else "N/A"
+            available = True
+        except:
+            notify = page.locator("button:has-text('Notify Me')")
+            available = await notify.count() == 0
+            price = "Not Available" if not available else "N/A"
+
+        await page.close()
+        print(f"✅ Scraped: {name}")
+        return {
+            "url": url,
+            "name": name,
+            "size": size,
+            "price": price,
+            "available": available
+        }
+
+    except Exception as e:
+        print(f"❌ Failed: {url} | {e}")
+        return {
+            "url": url,
+            "name": "N/A",
+            "size": "N/A",
+            "price": "N/A",
+            "available": False
+        }
+
+async def fetch_all_products(urls):
+    async with async_playwright() as p:
+        browser = await p.chromium.launch(headless=True)
+        context = await browser.new_context(storage_state="bb.json")
+        tasks = [extract_product_info(context, url) for url in urls]
+        results = await asyncio.gather(*tasks)
+        await browser.close()
+        return results
+
+if __name__ == "__main__":
+    urls = [
+        "https://www.bigbasket.com/pd/40010687/fresho-garlic-peeled-100-g/",
+        "https://www.bigbasket.com/pd/100285703/nandini-goodlife-toned-milk-1-l-carton/",
+        "https://www.bigbasket.com/pd/40115484/liao-flat-dry-mop-with-steel-stick-micro-fiber-expandable-1-pc/",
+        "https://www.bigbasket.com/pd/40177241/purefoods-iron-vitamins-gummies-for-kids-strawberry-gluten-free-lactose-free-60-pcs-container/"
+    ]
+
+    results = asyncio.run(fetch_all_products(urls))
+
+    with open("product_data.json", "w") as f:
+        json.dump(results, f, indent=2)
+
+    print("✅ Saved to product_data.json")
