@@ -62,7 +62,7 @@ async def extract_product_info(context, url):
 
 async def fetch_all_products(urls):
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=False)
+        browser = await p.chromium.launch(headless=True)
 
         context = await browser.new_context(
             storage_state="bb.json",
