@@ -7,7 +7,7 @@ from supabase import create_client
 # Get environment variables from GitHub Secrets
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
-TARGET_USER_ID = os.getenv("USER_ID")  # <-- Add this in GitHub Secrets
+TARGET_USER_ID = os.getenv("SUPABASE_TARGET_USER_ID")
 
 # Basic validation
 if not SUPABASE_URL or not SUPABASE_SERVICE_ROLE_KEY or not TARGET_USER_ID:
