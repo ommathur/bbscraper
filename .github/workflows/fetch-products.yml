@@ -13,24 +13,20 @@ jobs:
       SUPABASE_TARGET_USER_ID: ${{ secrets.USER_ID }}
 
     steps:
+      # ✅ Checkout code
       - name: Checkout repo
         uses: actions/checkout@v3
 
-      # ✅ Cache pip dependencies
-      - name: Cache Python dependencies
+      # ✅ Cache Python + Playwright dependencies
+      - name: Cache dependencies and browsers
         uses: actions/cache@v3
         with:
-          path: ~/.cache/pip
-          key: pip-${{ runner.os }}-${{ hashFiles('**/requirements.txt') }}
+          path: |
+            ~/.cache/pip
+            ~/.cache/ms-playwright
+          key: deps-${{ runner.os }}-${{ hashFiles('**/requirements.txt') }}
           restore-keys: |
-            pip-${{ runner.os }}-
-
-      # ✅ Cache Playwright browsers
-      - name: Cache Playwright browsers
-        uses: actions/cache@v3
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}
+            deps-${{ runner.os }}-
 
       # ✅ Set up Python
       - name: Set up Python
@@ -39,29 +35,27 @@ jobs:
           python-version: "3.10"
           cache: "pip"
 
-      # ✅ Install Python dependencies
+      # ✅ Install Python packages
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      # ✅ Install Playwright browsers (will reuse cache if available)
+      # ✅ Install Playwright browser (chromium only, faster)
       - name: Install Playwright Browsers
-        run:  python -m playwright install chromium
+        run: python -m playwright install chromium
 
-      - name: Debug env vars
-        run: |
-          echo "✅ Supabase URL: $SUPABASE_URL"
-          echo "✅ Supabase Key Length: ${#SUPABASE_SERVICE_ROLE_KEY}"
-          echo "✅ Supabase User ID: $SUPABASE_TARGET_USER_ID"
-
+      # ✅ Fetch session cookie from Supabase
       - name: Fetch session data from Supabase
         run: python fetch_from_supabase.py
 
+      # ✅ Convert session to Playwright storage_state format
       - name: Convert bb.json for Playwright
         run: python convert_bbjson.py
 
+      # ✅ Run the BigBasket scraper
       - name: Run BigBasket scraper
         run: python bb_scraper.py
 
+      # ✅ Upload scraped data
       - name: Upload product_data.json artifact
         uses: actions/upload-artifact@v4
         with:
