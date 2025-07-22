@@ -19,7 +19,7 @@ async def extract_product_info(context, url):
             await got_it_btn.click()
             await page.wait_for_timeout(500)
 
-        await page.wait_for_selector('h1[class*="Description___StyledH"]', timeout=6000)
+        await page.wait_for_selector('h1[class*="Description___StyledH"]', timeout=5000)
 
         try:
             name_elem = page.locator('h1[class*="Description___StyledH"]').first
@@ -30,15 +30,16 @@ async def extract_product_info(context, url):
         size = name.split(",")[-1].strip() if "," in name else "N/A"
 
         try:
+            notify = page.locator("button:has-text('Notify Me')")
+            available = await notify.count() == 0
+            price = "Not Available" if not available else "N/A"
+            
+        except:
             price_elem = page.locator('td[class*="Description___StyledTd"]').first
             price_text = await price_elem.inner_text()
             price_match = re.search(r"₹(\d+)", price_text)
             price = price_match.group(1) if price_match else "N/A"
             available = True
-        except:
-            notify = page.locator("button:has-text('Notify Me')")
-            available = await notify.count() == 0
-            price = "Not Available" if not available else "N/A"
 
         await page.close()
         print(f"✅ Scraped: {name}")
