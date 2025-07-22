@@ -7,8 +7,11 @@ import os
 async def extract_product_info(context, url):
     try:
         page = await context.new_page()
-        await page.goto(url, timeout=5000)  # ⏱ Reduced timeout
-        await page.wait_for_selector('h1[class*="Description___StyledH"]', timeout=4000)
+        await page.goto(url, timeout=8000)
+        await page.wait_for_load_state("networkidle")
+
+        # Inject stealth script
+        await page.add_init_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
 
         # Close modal if it appears
         got_it_btn = page.locator('button:has-text("Got it")')
@@ -16,8 +19,10 @@ async def extract_product_info(context, url):
             await got_it_btn.click()
             await page.wait_for_timeout(500)
 
+        await page.wait_for_selector('h1[class*="Description___StyledH"]', timeout=5000)
+
         try:
-            name_elem = page.locator('h1[class*="Description___StyledH"]:nth-match(1)')
+            name_elem = page.locator('h1[class*="Description___StyledH"]').first
             name = await name_elem.inner_text()
         except:
             name = "N/A"
@@ -25,7 +30,7 @@ async def extract_product_info(context, url):
         size = name.split(",")[-1].strip() if "," in name else "N/A"
 
         try:
-            price_elem = page.locator('td[class*="Description___StyledTd"]:nth-match(1)')
+            price_elem = page.locator('td[class*="Description___StyledTd"]').first
             price_text = await price_elem.inner_text()
             price_match = re.search(r"₹(\d+)", price_text)
             price = price_match.group(1) if price_match else "N/A"
@@ -57,7 +62,7 @@ async def extract_product_info(context, url):
 
 async def fetch_all_products(urls):
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await p.chromium.launch(headless=False)
 
         context = await browser.new_context(
             storage_state="bb.json",
@@ -79,14 +84,10 @@ async def fetch_all_products(urls):
             }
         )
 
-        # ✅ Inject stealth script once
-        await context.add_init_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
-
-        # ✅ Block unnecessary resources
+        # ✅ Block unnecessary resources (images, fonts, stylesheets, media)
         await context.route("**/*", lambda route: route.abort()
-            if route.request.resource_type in ["image", "stylesheet", "font", "media"]
-            else route.continue_()
-        )
+                            if route.request.resource_type in ["image", "font", "media"]
+                            else route.continue_())
 
         tasks = [extract_product_info(context, url) for url in urls]
         results = await asyncio.gather(*tasks)
