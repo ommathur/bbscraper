@@ -29,12 +29,11 @@ async def extract_product_info(context, url):
 
         size = name.split(",")[-1].strip() if "," in name else "N/A"
 
-        try:
-            notify = page.locator("button:has-text('Notify Me')")
-            available = await notify.count() == 0
-            price = "Not Available" if not available else "N/A"
-            
-        except:
+        notify = page.locator("button:has-text('Notify Me')")
+        if await notify.count() > 0:
+            available = False
+            price = "Not Available"
+        else:
             price_elem = page.locator('td[class*="Description___StyledTd"]').first
             price_text = await price_elem.inner_text()
             price_match = re.search(r"₹(\d+)", price_text)
@@ -63,7 +62,7 @@ async def extract_product_info(context, url):
 
 async def fetch_all_products(urls):
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await p.chromium.launch(headless=False)
 
         context = await browser.new_context(
             storage_state="bb.json",
